@@ -2,27 +2,59 @@
 #define CBUFFER_H
 /**
  *  @file   cbuffer.h
+ *  @note   Interface to the cbuffer.c routines
  *
  *  @author Hans
- *  @date   11/4/2019
+ *  @date   11/10/2019
  */
 
-#ifndef ELEMENT_TYPE
-#define ELEMENT_TYPE int
+/**
+ *  Default element is int
+ */
+#ifndef CBUFFER_ELEMENTTYPE
+#define CBUFFER_ELEMENTTYPE int
 #endif
 
+/**
+ *  Default is the use of pointers
+ */
+#if !defined(CBUFFER_USEINTEGERS) && !defined(CBUFFER_USEPOINTERS)
+#define CBUFFER_USEPOINTERS
+#endif
 
-typedef struct cbuffer_s *cbuffer;
+typedef struct cbuffer_s {
+    CBUFFER_ELEMENTTYPE    *area;
+
+#if defined(CBUFFER_USEINTEGERS)
+    int                     front;
+    int                     rear;
+#elif defined(CBUFFER_USEPOINTERS)
+    CBUFFER_ELEMENTTYPE    *front;
+    CBUFFER_ELEMENTTYPE    *rear;
+#endif
+    int                     size;
+    int                     capacity;
+} *cbuffer;
 
 cbuffer cbuffer_create(int n);
 void cbuffer_destroy(cbuffer f);
-int cbuffer_insert(cbuffer f, ELEMENT_TYPE x);
-int cbuffer_remove(cbuffer f, ELEMENT_TYPE *px);
+int cbuffer_insert(cbuffer f, CBUFFER_ELEMENTTYPE x);
+int cbuffer_remove(cbuffer f, CBUFFER_ELEMENTTYPE *px);
 
-int cbuffer_capacity(cbuffer f);
-int cbuffer_size(cbuffer f);
-int cbuffer_empty(cbuffer f);
-int cbuffer_full(cbuffer f);
+static inline int cbuffer_capacity(cbuffer f) {
+    return f->capacity;
+}
 
+static inline int cbuffer_size(cbuffer f) {
+    return f->size;
+}
+
+static inline int cbuffer_empty(cbuffer f) {
+    return f->size == 0;
+}
+
+static inline int cbuffer_full(cbuffer f) {
+    return f->size == f->capacity;
+}
 #endif
 

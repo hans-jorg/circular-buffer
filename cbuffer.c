@@ -22,32 +22,6 @@
 
 #include "cbuffer.h"
 
-/**
- * Default is to use indexes
- */
-///@{
-#if !defined(CBUFFER_USEPOINTERS) && !defined(CBUFFER_USEINDEXES)
-#define CBUFFER_USEINDEXES
-#endif
-///@}
-
-
-
-/**
- * Main data structure
- */
-struct cbuffer_s {
-    ELEMENT_TYPE    *area;          /// Contiguous area to store the information
-#ifdef CBUFFER_USEPOINTERS
-    ELEMENT_TYPE    *front;         /// Pointer to first element
-    ELEMENT_TYPE    *rear;          /// Pointer to last element
-#elif defined(CBUFFER_USEINDEXES)
-    int             front;          /// Index of first element
-    int             rear;           /// Index of last element
-#endif
-    int             size;           /// Number of elements in buffer
-    int             capacity;       /// Maximal number of elements in buffer
-};
 
 /**
  *  Hack!
@@ -57,9 +31,9 @@ struct cbuffer_s {
 ///@{
 
 /// Begin
-#define _BEGIN      do {
+#define _B do {
 /// End
-#define _END           } while(0)
+#define _E } while(0)
 ///@}
 
 /**
@@ -67,17 +41,9 @@ struct cbuffer_s {
  */
 ///@{
 #if defined(CBUFFER_USEPOINTERS)
-#define ADJUST_LIMITS(X,F) \
-    _BEGIN \
-        if( F->X >= F->area+F->capacity ) \
-            F->X = F->area; \
-    _END
+#define ADJUST_LIMITS(X,F) _B if( F->X >= F->area+F->capacity ) F->X = F->area; _E
 #elif defined(CBUFFER_USEINDEXES)
-#define ADJUST_LIMITS(X,F) \
-    _BEGIN \
-        if( F->X >= F->capacity ) \
-            F->X = 0;\
-    _END
+#define ADJUST_LIMITS(X,F) _B if( F->X >= F->capacity ) F->X = 0; _E
 #endif
 ///@}
 
@@ -87,13 +53,11 @@ struct cbuffer_s {
 cbuffer
 cbuffer_create(int n) {
 cbuffer p;
-ELEMENT_TYPE *q;
-
-    assert(n>0);
+CBUFFER_ELEMENTTYPE *q;
 
     p = malloc(sizeof(struct cbuffer_s));
     if( !p ) return NULL;
-    q = malloc(n*sizeof(ELEMENT_TYPE));
+    q = malloc(n*sizeof(CBUFFER_ELEMENTTYPE));
     if( !q ) {
         free(p);
         return NULL;
@@ -101,7 +65,7 @@ ELEMENT_TYPE *q;
     p->area = q;
 #ifdef CBUFFER_USEPOINTERS
     p->front = p->rear = q;
-#elif defined(CBUFFER_USEINDEXES)
+#elif defined(CBUFFER_USEINTEGERS)
     p->front = p->rear = 0;
 #endif
     p->size = 0;
@@ -129,15 +93,14 @@ cbuffer_destroy(cbuffer f) {
  *  @param  x: element to store in circular buffer
  */
 int
-cbuffer_insert(cbuffer f, ELEMENT_TYPE x) {
+cbuffer_insert(cbuffer f, CBUFFER_ELEMENTTYPE x) {
 
     assert(f);
     assert(f->area);
 
 #ifdef CBUFFER_USEPOINTERS
     *(f->rear++) = x;
-#elif defined(CBUFFER_USEINDEXES)
-    assert(f->rear < f->capacity);
+#elif defined(CBUFFER_USEINTEGERS)
     f->area[f->rear++] = x;
 #endif
     ADJUST_LIMITS(rear,f);
@@ -148,7 +111,7 @@ cbuffer_insert(cbuffer f, ELEMENT_TYPE x) {
 #ifdef CBUFFER_USEPOINTERS
         if( f->front >= f->area+f->capacity )
             f->front = f->area;
-#elif defined(CBUFFER_USEINDEXES)
+#elif defined(CBUFFER_USEINTEGERS)
         if( f->front >= f->capacity )
             f->front = 0;
 #endif
@@ -156,14 +119,6 @@ cbuffer_insert(cbuffer f, ELEMENT_TYPE x) {
     } else {
         f->size++;
     }
-    assert(f->size <= f->capacity);
-#ifdef CBUFFER_USERPOINTERS
-    assert(f->front >= f->area && f->front < f->area+f->capacity);
-    assert(f->rear  >= f->area && f->rear  < f->area+f->capacity);
-#elif defined(CBUFFER_USEINDEXES)
-    assert(f->front<f->capacity);
-    assert(f->rear <f->capacity);
-#endif
     return 0;
 }
 
@@ -176,7 +131,7 @@ cbuffer_insert(cbuffer f, ELEMENT_TYPE x) {
  *  @return    -1 if buffer empty, 0 otherwise
  */
 int
-cbuffer_remove(cbuffer f, ELEMENT_TYPE *px) {
+cbuffer_remove(cbuffer f, CBUFFER_ELEMENTTYPE *px) {
 
     assert(f);
     assert(f->area);
@@ -187,66 +142,11 @@ cbuffer_remove(cbuffer f, ELEMENT_TYPE *px) {
     f->size--;
 #ifdef CBUFFER_USEPOINTERS
     *px = *(f->front++);
-#elif defined(CBUFFER_USEINDEXES)
+#elif defined(CBUFFER_USEINTEGERS)
     *px = f->area[f->front++];
 #endif
     ADJUST_LIMITS(front,f);
-    assert(f->size <= f->capacity);
-#ifdef CBUFFER_USERPOINTERS
-    assert(f->front >= f->area && f->front < f->area+f->capacity);
-    assert(f->rear  >= f->area && f->rear  < f->area+f->capacity);
-#elif defined(CBUFFER_USEINDEXES)
-    assert(f->front<f->capacity);
-    assert(f->rear <f->capacity);
-#endif
     return 0;
-}
-
-/**
- *  @brief  returns the capacity
- *
- *  @param  f: pointer to cbuffer_s structure created by cbuffer_create
- *
- *  @return capacity of buffer, ie, maximal number of elements in circular buffer
- *          defined by the creation
- *
- */
-int cbuffer_capacity(cbuffer f) {
-    return f->capacity;
-}
-
-/**
- *  @brief  returns the size, i.e., how many elements in it
- *
- *  @param  f: pointer to cbuffer_s structure created by cbuffer_create
- *
- *  @return size of buffer, ie, number of elements in circular buffer
- */
-int cbuffer_size(cbuffer f) {
-    return f->size;
-}
-
-/**
- *  @brief  returns true if empty
- *
- *  @param  f: pointer to cbuffer_s structure created by cbuffer_create
- *
- *  @return 1 if empty, 0 otherwise
- *
- */
-int cbuffer_empty(cbuffer f) {
-    return f->size == 0;
-}
-
-/**
- *  @brief  returns true if full
- *
- *  @param  f: pointer to cbuffer_s structure created by cbuffer_create
- *
- *  @return 1 if full, 0 otherwise
- */
-int cbuffer_full(cbuffer f) {
-    return f->size == f->capacity;
 }
 
 
