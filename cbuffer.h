@@ -23,7 +23,6 @@
 #endif
 
 typedef struct cbuffer_s {
-    CBUFFER_ELEMENTTYPE    *area;
 
 #if defined(CBUFFER_USEINTEGERS)
     int                     front;
@@ -34,6 +33,7 @@ typedef struct cbuffer_s {
 #endif
     int                     size;
     int                     capacity;
+    CBUFFER_ELEMENTTYPE     area[1]; // place holder
 } *cbuffer;
 
 cbuffer cbuffer_create(int n);

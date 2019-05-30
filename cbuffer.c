@@ -53,18 +53,12 @@
 cbuffer
 cbuffer_create(int n) {
 cbuffer p;
-CBUFFER_ELEMENTTYPE *q;
 
-    p = malloc(sizeof(struct cbuffer_s));
+    p = malloc(sizeof(struct cbuffer_s)+(n-1)*sizeof(CBUFFER_ELEMENTTYPE));
     if( !p ) return NULL;
-    q = malloc(n*sizeof(CBUFFER_ELEMENTTYPE));
-    if( !q ) {
-        free(p);
-        return NULL;
-    }
-    p->area = q;
+
 #ifdef CBUFFER_USEPOINTERS
-    p->front = p->rear = q;
+    p->front = p->rear = p->area;
 #elif defined(CBUFFER_USEINTEGERS)
     p->front = p->rear = 0;
 #endif
@@ -81,8 +75,6 @@ CBUFFER_ELEMENTTYPE *q;
 void
 cbuffer_destroy(cbuffer f) {
     assert(f);
-    free(f->area);
-    f->area = NULL;
     free(f);
 }
 
@@ -155,7 +147,6 @@ cbuffer_remove(cbuffer f, CBUFFER_ELEMENTTYPE *px) {
  */
 #ifdef TEST
 #include <stdio.h>
-
 #include "unittest.h"
 
 ///@{
