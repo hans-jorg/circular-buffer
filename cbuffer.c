@@ -155,65 +155,80 @@ cbuffer_remove(cbuffer f, CBUFFER_ELEMENTTYPE *px) {
  */
 #ifdef TEST
 #include <stdio.h>
+
+#include "unittest.h"
+
 ///@{
 int
 main (int argc, char *argv[]) {
 cbuffer f;
-int i;
+int i,e;
 int rc;
 
-    f = cbuffer_create(4);
-    printf("Apos criacao\n");
-    printf("Tamanho    %d\n",cbuffer_size(f));
-    printf("Capacidade %d\n",cbuffer_capacity(f));
-    printf("Vazio      %s\n",(cbuffer_empty(f)?"Sim":"Nao"));
-    printf("Cheio      %s\n",(cbuffer_full(f)?"Sim":"Nao"));
+    TESTINIT();
 
-    printf("Inserindo\n");
+    TESTMESSAGE("Criando um buffer circular para 4 elementos");
+    f = cbuffer_create(4);
+    TESTINT(0,cbuffer_size(f));
+    TESTINT(4,cbuffer_capacity(f));
+    TESTINT(1,cbuffer_empty(f));
+    TESTINT(0,cbuffer_full(f));
+
+    TESTMESSAGE("Inserindo 10 elementos. Somente os ultimos 4 devem sobrar");
     for(i=0;i<10;i++) {
         rc = cbuffer_insert(f,i);
-        printf("Inserindo %d => %s\n",i,(rc==0)?"OK":"Erro");
+        TESTINT(0,rc);
     }
-    printf("Apos insercoes\n");
-    printf("Tamanho    %d\n",cbuffer_size(f));
-    printf("Capacidade %d\n",cbuffer_capacity(f));
-    printf("Vazio      %s\n",(cbuffer_empty(f)?"Sim":"Nao"));
-    printf("Cheio      %s\n",(cbuffer_full(f)?"Sim":"Nao"));
 
-    printf("Removendo 2\n");
-    rc = cbuffer_remove(f,&i);
-    printf("Removendo %d => %s\n",i,(rc==0)?"OK":"Erro");
-    rc = cbuffer_remove(f,&i);
-    printf("Removendo %d => %s\n",i,(rc==0)?"OK":"Erro");
-    printf("Apos remocoes\n");
-    printf("Tamanho    %d\n",cbuffer_size(f));
-    printf("Capacidade %d\n",cbuffer_capacity(f));
-    printf("Vazio      %s\n",(cbuffer_empty(f)?"Sim":"Nao"));
-    printf("Cheio      %s\n",(cbuffer_full(f)?"Sim":"Nao"));
+    TESTINT(4,cbuffer_size(f));
+    TESTINT(4,cbuffer_capacity(f));
+    TESTINT(0,cbuffer_empty(f));
+    TESTINT(1,cbuffer_full(f));
 
-    printf("Inserindo mais\n");
+    TESTMESSAGE("Removendo dois elementos");
+    rc = cbuffer_remove(f,&i);
+    TESTINT(0,rc);
+    TESTINT(6,i);
+    rc = cbuffer_remove(f,&i);
+    TESTINT(0,rc);
+    TESTINT(7,i);
+
+    TESTMESSAGE("Buffer com dois elementos");
+    TESTINT(2,cbuffer_size(f));
+    TESTINT(4,cbuffer_capacity(f));
+    TESTINT(0,cbuffer_empty(f));
+    TESTINT(0,cbuffer_full(f));
+
+    TESTMESSAGE("Inserindo mais 10");
     for(i=10;i<20;i++) {
         rc = cbuffer_insert(f,i);
-        printf("Inserindo %d => %s\n",i,(rc==0)?"OK":"Erro");
+        TESTINT(0,rc);
     }
-    printf("Apos mais insercoes\n");
-    printf("Tamanho    %d\n",cbuffer_size(f));
-    printf("Capacidade %d\n",cbuffer_capacity(f));
-    printf("Vazio      %s\n",(cbuffer_empty(f)?"Sim":"Nao"));
-    printf("Cheio      %s\n",(cbuffer_full(f)?"Sim":"Nao"));
 
-    printf("Removendo tudo\n");
+    TESTMESSAGE("Buffer cheio");
+    TESTINT(4,cbuffer_size(f));
+    TESTINT(4,cbuffer_capacity(f));
+    TESTINT(0,cbuffer_empty(f));
+    TESTINT(1,cbuffer_full(f));
+
+    TESTMESSAGE("Removendo tudo");
+    e = 16;
     while( !cbuffer_empty(f) ) {
         rc = cbuffer_remove(f,&i);
-        printf("Removendo %d => %s\n",i,(rc==0)?"OK":"Erro");
-
+        TESTINT(0,rc);
+        TESTINT(i,e);
+        e++;
     }
-    printf("Apos remocoes\n");
-    printf("Tamanho    %d\n",cbuffer_size(f));
-    printf("Capacidade %d\n",cbuffer_capacity(f));
-    printf("Vazio      %s\n",(cbuffer_empty(f)?"Sim":"Nao"));
-    printf("Cheio      %s\n",(cbuffer_full(f)?"Sim":"Nao"));
+
+    TESTMESSAGE("Buffer vazio");
+    TESTINT(0,cbuffer_size(f));
+    TESTINT(4,cbuffer_capacity(f));
+    TESTINT(1,cbuffer_empty(f));
+    TESTINT(0,cbuffer_full(f));
+
     cbuffer_destroy(f);
+    TESTSUMMARY();
+
     return 0;
 }
 ///@}
